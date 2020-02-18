@@ -1,5 +1,5 @@
 # Unfollow-All-On-Instagram
-Python bot to unfollow all the users.
+Python bot that uses selenium to unfollow all the users you follow.
 
 1. Selenium
 
