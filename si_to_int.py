@@ -1,3 +1,8 @@
+
+
+#This method is created by the following GitHub user
+#https://gist.github.com/gajeshbhat
+
 def convert_si_to_number(x):
     total_stars = 0
     if  'k' in x:
