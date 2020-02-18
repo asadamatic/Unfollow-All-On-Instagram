@@ -8,6 +8,8 @@ from selenium.webdriver.common.by import By
 import sys
 import time
 
+from si_to_int import convert_si_to_number
+
 option = Options()
 
 #Adding attributes to the browser to be openned
@@ -23,9 +25,13 @@ print('Provide your login credentials!')
 username = '(-Enter your Username here-)'
 password = '(-Enter your Password here-)'
 
+#Number of users unfollowed
+unFollowed = 0
+
+
 browser = webdriver.Chrome(options=option)
 
-unfollowedCheck = 0 #Check for number of accounts unfollowed
+unFollowedCheck = 0 #Check for number of accounts unfollowed
 
 #Adding a delay, and waiting for the element to be loaded
 delay = 10
@@ -65,10 +71,41 @@ try:
 
 except (NoSuchElementException, TimeoutException) as exception:
 
-    print("Slow Or No Connection :(")
-    sys.exit()
 
 
+    try:
+
+        #Referencing text box that asks for email
+        usernameInput = browser.find_element_by_xpath('//*[@id="react-root"]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input')
+        usernameInput.send_keys(username)
+    
+        #Referencing text box that asks for password
+        passwordInput = browser.find_element_by_xpath('//*[@id="react-root"]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input')
+        passwordInput.send_keys(password)
+
+        #Referencing Login Button
+        loginButton = browser.find_element_by_xpath('//*[@id="react-root"]/section/main/article/div[2]/div[1]/div/form/div[4]/button')
+        loginButton.click()
+
+        time.sleep(4)
+
+        try:
+        
+            #Looking for a login error message
+            errorMessagePresent = browser.find_element_by_xpath('//*[@id="slfErrorAlert"]')
+      
+            print('Wrong Credentials :(')
+            sys.exit() #exit the program
+
+        except  (NoSuchElementException, TimeoutException) as exception:
+
+            print('Successfuly Loggedin :)')  
+          
+
+    except (NoSuchElementException, TimeoutException) as exception:
+    
+        print("Slow Or No Connection :(")
+        sys.exit()
 
 
 
@@ -76,7 +113,9 @@ try:
     
     numberOffollowed = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '//*[@id="react-root"]/section/main/div/header/section/ul/li[3]/a/span')))
     followed = numberOffollowed.text
-    followed = int(int(followed) + 1)
+
+    #Converting Units 'k', 'm' and 'b' into numbers
+    followed = convert_si_to_number(followed)
 
 except (NoSuchElementException, TimeoutException) as exception:
     
@@ -93,30 +132,46 @@ try:
 
     followedPopup = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, "//div[@class='isgrP']")))
 
-    for i in range(1, followed):
+    for unFollowedCheck in range(1, followed):
 
         try:
 
-            unFollowButton = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[4]/div/div[2]/ul/div/li[{}]/div/div[2]/button'.format(i))))                                                          
-                
+            unFollowButton = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[4]/div/div[2]/ul/div/li[{}]/div/div[2]/button'.format(unFollowedCheck))))                                                          
+            
+            usernameUnFollowed = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[4]/div/div[2]/ul/div/li[{}]/div/div[1]/div[2]/div[1]/a'.format(unFollowedCheck))))
+            
             if unFollowButton.text == 'Following':
 
                 unFollowButton.click()   
 
-                print('Unfollowed!')   
+                time.sleep(1)
+
+                #confirming to unfollow the selected user
+                unFollowConfirm = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[5]/div/div/div[3]/button[1]')))
+                unFollowConfirm.click()
+
+
+                print('Unfollowed {}'.format(usernameUnFollowed.text))   
+
+                time.sleep(5)
+
+                #Detecting if Instagram is blocking more follows
+                if unFollowButton.text == 'Follow':
+                    
+                    unFollowed = unFollowed + 1
+
+                elif unFollowButton.text == 'Following':
+                    
+                    print('Unable to follow more, try again later :)')
+                    break
 
             else:
+
                 #Interpreting this condition as the end of 'Following' list
-                break    
+                break                
+            
 
-            time.sleep(1) #one second delay
-
-            unFollowConfirm = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[5]/div/div/div[3]/button[1]')))
-            unFollowConfirm.click()
-
-            unfollowedCheck = i
-
-            if unfollowedCheck % 6 == 0: #Scrolling on Followers popup after unfollowing 7 users every time 
+            if unFollowedCheck % 6 == 0: #Scrolling on Followers popup after unfollowing 7 users every time 
                 browser.execute_script('arguments[0].scrollTop = arguments[0].scrollTop + arguments[0].offsetHeight;', followedPopup)
                 print('Scrolling...')
                 time.sleep(2)
@@ -127,27 +182,40 @@ try:
 
             try:
                 
-                unFollowButton = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[4]/div/div[2]/ul/div/li[{}]/div/div[3]/button'.format(i))))
-                                                                       
-                if unFollowButton.text == 'Following':
-                
-                    unFollowButton.click()      
+                unFollowButton = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[4]/div/div[2]/ul/div/li[{}]/div/div[3]/button'.format(unFollowedCheck))))
 
-                    print('Unfollowed!')   
+                usernameUnFollowed = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[4]/div/div[2]/ul/div/li[{}]/div/div[2]/div[1]/div/div/a'.format(unFollowedCheck))))
+                                                                           
+                if unFollowButton.text == 'Following':
+
+                    unFollowButton.click()   
+                    
+                    time.sleep(1)
+
+                    #confirming to unfollow the selected user
+                    unFollowConfirm = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[5]/div/div/div[3]/button[1]')))
+                    unFollowConfirm.click()
+
+                    print('Unfollowed {}'.format(usernameUnFollowed.text))   
+
+                    time.sleep(5)
+
+                    #Detecting if Instagram is blocking more follows
+                    if unFollowButton.text == 'Follow':
+                    
+                        unFollowed = unFollowed + 1
+
+                    elif unFollowButton.text == 'Following':
+                    
+                        print('Unable to follow more, try again later :)')
+                        break
 
                 else:
 
+                    #Interpreting this condition as the end of 'Following' list
                     break    
 
-                time.sleep(1) #one second delay
-
-                unFollowConfirm = wait.until(expected_conditions.element_to_be_clickable((By.XPATH, '/html/body/div[5]/div/div/div[3]/button[1]')))
-                unFollowConfirm.click()
-
-                
-                unfollowedCheck = i
-
-                if unfollowedCheck % 6 == 0: #Scrolling on Followers popup after unfollowing 7 users every time 
+                if unFollowedCheck % 6 == 0: #Scrolling on Followers popup after unfollowing 7 users every time 
                     browser.execute_script('arguments[0].scrollTop = arguments[0].scrollTop + arguments[0].offsetHeight;', followedPopup)
                     print('Scrolling...')
                     time.sleep(2)
@@ -171,12 +239,13 @@ except (NoSuchElementException, TimeoutException) as exception:
     pass
 
 followed = followed - 1
-#Making sure, all the accounts have been unfollowed
-if unfollowedCheck == followed:
 
-    print('Unfollowed All Successfully :)')
+#Making sure, all the accounts have been unfollowed
+if unFollowed == followed:
+
+    print('Unfollowed All {} Users Successfully :)'.format(unFollowed))
     sys.exit()
 
 else:
 
-    print('Unfollowed {} users.'.format(unfollowedCheck))
+    print('Unfollowed {} users.'.format(unFollowed))
