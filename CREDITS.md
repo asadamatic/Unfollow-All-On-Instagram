@@ -1,6 +1,6 @@
 The module Si_to_Int.py has been created by the following GitHub User
 
-@Gajeshbhat
+
 User Profile Link:
 
 https://gist.github.com/gajeshbhat
